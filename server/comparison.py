@@ -150,6 +150,36 @@ def comparison_detail ():
 
         return list (map (_ComparisonDetailRowCalcFields._make, res))
 
+def comparison_detail_agg ():
+    """Output comparison of 2 witnesses, chapter detail.
+
+    Outputs a detail of the differences between 2 manuscripts in one chapter.
+    """
+
+    with current_app.config.dba.engine.begin () as conn:
+        ms1 = Manuscript (conn, request.args.get ('ms1') or 'A')
+        ms2 = Manuscript (conn, request.args.get ('ms2') or 'A')
+        range_ = request.args.get ('range') or 'All'
+
+        res = execute (conn, """
+        SELECT p.pass_id, p.begadr, p.endadr, v1.labez_clique, v1.lesart,
+                                              v2.labez_clique, v2.lesart,
+          is_p_older (p.pass_id, v1.labez, v1.clique, v2.labez, v2.clique) AS older,
+          is_p_older (p.pass_id, v2.labez, v2.clique, v1.labez, v1.clique) AS newer,
+          is_p_unclear (p.pass_id, v1.labez, v1.clique) OR
+          is_p_unclear (p.pass_id, v2.labez, v2.clique) AS unclear
+        FROM (SELECT * FROM ranges WHERE range = :range_) r
+          JOIN passages p ON (r.passage @> p.passage )
+          JOIN apparatus_cliques_view v1 USING (pass_id)
+          JOIN apparatus_cliques_view v2 USING (pass_id)
+        WHERE v1.ms_id = :ms1 AND v2.ms_id = :ms2
+          AND v1.labez !~ '^z' AND v2.labez !~ '^z'
+          AND v1.cbgm AND v2.cbgm
+        ORDER BY p.pass_id
+        """, dict (parameters, ms1 = ms1.ms_id, ms2 = ms2.ms_id, range_ = range_))
+
+        return list (map (_ComparisonDetailRowCalcFields._make, res))
+
 
 @bp.route ('/comparison-summary.csv')
 def comparison_summary_csv ():
@@ -167,3 +197,12 @@ def comparison_detail_csv ():
     auth ()
 
     return csvify (_ComparisonDetailRowCalcFields._fields, comparison_detail ())
+
+
+@bp.route ('/comparison-detail-agg.csv')
+def comparison_detail_csv_agg ():
+    """Endpoint. Serve a CSV table. (see also :func:`comparison_detail`)"""
+
+    auth ()
+
+    return csvify (_ComparisonDetailRowCalcFields._fields, comparison_detail_agg ())
