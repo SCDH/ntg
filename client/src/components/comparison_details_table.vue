@@ -8,6 +8,7 @@
             Detailed Comparison of {{ ms1.hs }} and {{ ms2.hs }} in Chapter {{ range }}
           </div>
           <toolbar :toolbar="toolbar">
+            <button-group slot="right" :options="options.agreements" />
             <button-group slot="right" :options="options.csv" />
           </toolbar>
         </div>
@@ -112,9 +113,11 @@ export default {
         return {
             'rows'      : [],
             'sorted_by' : 'pass_id',
+            'detail_url': 'comparison-detail.csv',
             'options'   : options,
             'toolbar'   : {
                 'csv' : () => this.download (), // show a download csv button
+                'agreements' : () => this.switch_agreements (),
             },
         };
     },
@@ -130,7 +133,16 @@ export default {
                 });
             });
         },
-        build_url (page = 'comparison-detail.csv') {
+        switch_agreements () {
+            if (this.detail_url == 'comparison-detail.csv') {
+                this.detail_url = 'comparison-detail-agg.csv'
+            }
+            else {
+                this.detail_url = 'comparison-detail.csv'
+            }
+            this.load_data ();
+        },
+        build_url (page = this.detail_url) {
             return page + '?' + tools.param ({
                 'ms1'   : 'id' + this.ms1.ms_id,
                 'ms2'   : 'id' + this.ms2.ms_id,

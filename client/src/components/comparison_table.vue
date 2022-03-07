@@ -7,6 +7,7 @@
         <div class="d-flex justify-content-between">
           <div></div>
           <toolbar :toolbar="toolbar">
+            <button-group slot="right" :options="options.agreements" />
             <button-group slot="right" :options="options.csv" />
           </toolbar>
         </div>
@@ -164,8 +165,10 @@ export default {
             'rows'      : [],
             'sorted_by' : 'rg_id', // initial value
             'options'   : options,
+            'summary_url'   : 'comparison-summary.csv?',
             'toolbar'   : {
                 'csv' : () => this.download (), // show a download csv button
+                'agreements' : () => this.switch_agreements (),
             },
         };
     },
@@ -180,17 +183,28 @@ export default {
     'methods' : {
         load_data () {
             const vm = this;
+            // load the csv from api
+            console.log(vm.build_url());
             vm.get (vm.build_url ()).then ((response) => {
                 vm.rows = csv_parse (response.data, { 'columns' : true })
                     .map (row_conversion);
                 vm.sort ();
             });
         },
+        switch_agreements () {
+            if (this.summary_url == 'comparison-summary.csv?') {
+                this.summary_url = 'comparison-agg-summary.csv?'
+            }
+            else {
+                this.summary_url = 'comparison-summary.csv?'
+            }
+            this.load_data ();
+        },
         download () {
             window.open (this.build_full_api_url (this.build_url (), '_blank'));
         },
         build_url () {
-            return 'comparison-summary.csv?' + tools.param ({
+            return this.summary_url + tools.param ({
                 'ms1' : 'id' + this.ms1.ms_id,
                 'ms2' : 'id' + this.ms2.ms_id,
             });

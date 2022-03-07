@@ -71,6 +71,13 @@ const options = {
             'title' : 'Download this table in CSV format.'
         },
     ],
+    'agreements' : [
+        {
+            'text'  : 'Show/Hide Agreements',
+            'value' : 'agreements',
+            'title' : 'Show or hide agreements'
+        },
+    ],
     'find_relatives' : [
         {
             'text'  : 'Find Relatives',
